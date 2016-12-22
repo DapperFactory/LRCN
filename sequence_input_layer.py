@@ -20,8 +20,9 @@ from multiprocessing import Pool
 from threading import Thread
 import skimage.io
 import copy
+import os
 
-flow_frames = 'flow_images/'
+flow_frames = '/home/wes/DeepLearning/dataset/flow_images/flow_images/'
 RGB_frames = 'frames/'
 test_frames = 16 
 train_frames = 16
@@ -126,7 +127,7 @@ class BatchAdvancer():
 class videoRead(caffe.Layer): # start of caffe layer definition
 
   def initialize(self): #called by setup()
-    self.train_or_test = 'train' #test
+    self.train_or_test = 'test' #test
     self.flow = False
     self.buffer_size = test_buffer  #num videos processed per batch
     self.frames = test_frames   #length of processed clip
@@ -136,12 +137,12 @@ class videoRead(caffe.Layer): # start of caffe layer definition
     self.height = 227
     self.width = 227
     self.path_to_images = RGB_frames 
-    self.video_list = 'ucf101_split1_testVideos.txt'  #exampel row[21]: Skiing/v_skiing_g13_c05 80
+    self.video_list =  'ucf101_split1_trainVideos.txt'  #exampel row[21]: Skiing/v_skiing_g13_c05 80
 
   def setup(self, bottom, top):
     random.seed(10)
     self.initialize() #see above  
-    
+    print 'My root', os.getcwd()
     f = open(self.video_list, 'r')
     f_lines = f.readlines()
     f.close()
@@ -152,14 +153,16 @@ class videoRead(caffe.Layer): # start of caffe layer definition
     for ix, line in enumerate(f_lines):
       #ex: line = Skiing/v_skiing_g13_c05 80
       #parse video_list and separate lable and from subdirectory
+      print 'line', line
       video = line.split(' ')[0].split('/')[1] #ex: v_skiing_g13_c05 subdirectory to video 
       l = int(line.split(' ')[1])   #ex: 8            # label 
-      
+      print  'video', video 
       #all frames in subdirectory are title with <subdirectory_gxx_cxx>/<subdirectory_gxx_cxx>.jpg
       #frames contain all the /path/to/frame.jpg
       frames = glob.glob('%s%s/*.jpg' %(self.path_to_images, video)) #'frames/v_skiing_g13_c05
       
       num_frames = len(frames)
+      print 'num_frames', num_frames
       video_dict[video] = {}
       video_dict[video]['frames'] = frames[0].split('.')[0] + '.%04d.jpg'
       video_dict[video]['reshape'] = (240,320)
@@ -168,6 +171,7 @@ class videoRead(caffe.Layer): # start of caffe layer definition
       video_dict[video]['label'] = l
       self.video_order.append(video) 
 
+      print 'video_order', self.video_order[1:10]    
     # now all the data is loaded into video_dict
     self.video_dict = video_dict
     self.num_videos = len(video_dict.keys())
@@ -262,9 +266,12 @@ class videoRead(caffe.Layer): # start of caffe layer definition
   def backward(self, top, propagate_down, bottom):
     pass
 
+
+"""FLOW IMAGES"""
 class videoReadTrain_flow(videoRead):
 
   def initialize(self):
+    print 'Working dir', os.getcwd()
     self.train_or_test = 'train'
     self.flow = True
     self.buffer_size = train_buffer  #num videos processed per batch
@@ -275,7 +282,7 @@ class videoReadTrain_flow(videoRead):
     self.height = 227
     self.width = 227
     self.path_to_images = flow_frames 
-    self.video_list = 'ucf101_split1_trainVideos.txt' 
+    self.video_list = '/home/wes/DeepLearning/caffe/examples/LRCN/ucf101_25_testVideo.txt' 
 
 class videoReadTest_flow(videoRead):
 
@@ -290,8 +297,10 @@ class videoReadTest_flow(videoRead):
     self.height = 227
     self.width = 227
     self.path_to_images = flow_frames 
-    self.video_list = 'ucf101_split1_testVideos.txt' 
+    self.video_list = '/home/wes/DeepLearning/caffe/examples/LRCN/ucf101_split1_testVideos.txt' 
 
+
+"""RGB IMAGES"""
 class videoReadTrain_RGB(videoRead):
 
   def initialize(self):
@@ -305,7 +314,7 @@ class videoReadTrain_RGB(videoRead):
     self.height = 227
     self.width = 227
     self.path_to_images = RGB_frames 
-    self.video_list = 'ucf101_split1_trainVideos.txt' 
+    self.video_list = '/home/wes/DeepLearning/caffe/examples/LRCN/ucf101_split1_trainVideos.txt' 
 
 class videoReadTest_RGB(videoRead):
 
@@ -320,4 +329,4 @@ class videoReadTest_RGB(videoRead):
     self.height = 227
     self.width = 227
     self.path_to_images = RGB_frames 
-    self.video_list = 'ucf101_split1_testVideos.txt' 
+    self.video_list = '/home/wes/DeepLearning/caffe/examples/LRCN/ucf101_split1_testVideos.txt' 

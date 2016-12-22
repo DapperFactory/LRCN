@@ -1,0 +1,13 @@
+name: "lstm_joints"
+layer {
+  name: "data"
+  type: "Python"
+  top: "data"
+  top: "label"
+  top: "clip_markers"
+  python_param {
+    module: "sequence_input_layer"
+    layer: "videoReadTrain_flow"
+  }
+  include: { phase: TRAIN }
+}
